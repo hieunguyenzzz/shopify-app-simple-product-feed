@@ -16,8 +16,8 @@ export function getRows(data) {
   const headings = getColumnHeadings(data);
   const result = data?.map(function (item) {
     return [
-      ...Object.values(item).map((value, i) => {
-        return value;
+      ...headings.filter(Boolean).map((value, i) => {
+        return item[value];
       }),
       <RowActionButtons key="actions" value={item} headings={headings} />,
     ];
