@@ -1,4 +1,4 @@
-import FeedCoumns from "../components/FeedColum/FeedCoumns";
+import FeedCoumns from "../components/FeedColumn/FeedCoumns";
 
 export const getStaticProps = async (ctx) => {
   return {
