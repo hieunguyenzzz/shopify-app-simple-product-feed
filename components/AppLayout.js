@@ -13,15 +13,25 @@ function AppLayout({ children }) {
 
   const tabs = [
     {
-      id: "general",
-      content: "General",
-      accessibilityLabel: "General",
-      panelID: "all-customers-content-1",
+      id: "product-feed",
+      content: "Feed columns",
+      panelID: "accepts-marketing-content-1",
     },
     {
-      id: "product-feed",
-      content: "Accepts marketing",
-      panelID: "accepts-marketing-content-1",
+      id: "feed",
+      content: "Feeds",
+      panelID: "accepts-marketing-content-2",
+    },
+    {
+      id: "filter",
+      content: "Filter",
+      panelID: "accepts-marketing-content-3",
+    },
+    {
+      id: "general",
+      content: "Settings",
+      accessibilityLabel: "General",
+      panelID: "all-customers-content-1",
     },
   ];
 

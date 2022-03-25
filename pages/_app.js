@@ -9,7 +9,9 @@ class MyApp extends App {
     const { Component, pageProps, host } = this.props;
     return (
       <AppProvider theme={theme} i18n={translations}>
-        <Component {...pageProps} />
+        <div style={{ minHeight: "110vh" }}>
+          <Component {...pageProps} />
+        </div>
       </AppProvider>
     );
   }
