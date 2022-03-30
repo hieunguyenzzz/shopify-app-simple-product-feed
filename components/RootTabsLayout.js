@@ -1,10 +1,17 @@
-import { Frame, Loading, Navigation, Toast, TopBar } from "@shopify/polaris";
-import { HomeMajor } from "@shopify/polaris-icons";
+import { Frame, Loading, Tabs, Toast, TopBar } from "@shopify/polaris";
 import { useRouter } from "next/router";
 import React, { useCallback, useRef, useState } from "react";
 import routes from "../libs/routes";
 
-function RootLayout({ children }) {
+const tabs = routes.map((item) => {
+  return {
+    id: item.path,
+    content: item.title,
+    accessibilityLabel: item.title,
+    panelID: item.path,
+  };
+});
+function RootTabsLayout({ children }) {
   const router = useRouter();
   const skipToContentRef = useRef(null);
   const [toastActive, setToastActive] = useState(false);
@@ -56,42 +63,33 @@ function RootLayout({ children }) {
       onNavigationToggle={toggleMobileNavigationActive}
     />
   );
-  const navigationMarkup = (
-    <Navigation location="/">
-      <Navigation.Section
-        title="Shopify App"
-        items={routes.map(({ title, path }) => {
-          return {
-            label: title,
-            icon: HomeMajor,
-            onClick: () => router.push(path),
-          };
-        })}
-      />
-    </Navigation>
-  );
 
   const loadingMarkup = isLoading ? <Loading /> : null;
 
   const skipToContentTarget = (
     <a id="SkipToContentTarget" ref={skipToContentRef} tabIndex={-1} />
   );
-
   return (
     <div style={{ height: "500px" }}>
       <Frame
         topBar={topBarMarkup}
-        navigation={navigationMarkup}
-        showMobileNavigation={mobileNavigationActive}
-        onNavigationDismiss={toggleMobileNavigationActive}
         skipToContentTarget={skipToContentRef.current}
       >
+        <Tabs
+          tabs={tabs}
+          selected={tabs.findIndex(
+            (tab) => tab.id === (router.asPath === "" ? "/" : router.asPath)
+          )}
+          onSelect={(index) => {
+            router.push("/" + tabs[index].id);
+          }}
+        ></Tabs>
         {skipToContentTarget}
-        {loadingMarkup}
         {children}
+        {loadingMarkup}
         {toastMarkup}
       </Frame>
     </div>
   );
 }
-export default RootLayout;
+export default RootTabsLayout;

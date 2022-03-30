@@ -13,6 +13,7 @@ import {
   PRODUCTS_QUERY,
   PRODUCT_ADD_MUTATION,
 } from "../../libs/keystone/query";
+import Provider from "../Provider";
 import FeedColumnModalForm from "./FeedColumnModalForm";
 import { getColumnContentTypes, getColumnHeadings, getRows } from "./utils";
 
@@ -81,4 +82,8 @@ const ProductFeeds = () => {
     </Page>
   );
 };
-export default ProductFeeds;
+export default () => (
+  <Provider>
+    <ProductFeeds />
+  </Provider>
+);

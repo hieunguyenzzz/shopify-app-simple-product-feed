@@ -1,12 +1,3 @@
-import React from "react";
-import General from "../components/General";
-import RootLayout from "../components/RootLayout";
-
-function Index() {
-  return (
-    <RootLayout>
-      <General />
-    </RootLayout>
-  );
-}
+import { indexRoute } from "../libs/routes";
+const Index = indexRoute.component;
 export default Index;

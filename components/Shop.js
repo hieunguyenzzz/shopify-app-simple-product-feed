@@ -103,42 +103,20 @@ export default function Shop() {
       }}
     />
   ) : null;
-  const rows = [
-    {
-      node: {
-        namespace: "testmetafield",
-        id: "gid://shopify/Metafield/22326484861186",
-        key: "testkey",
-        value: "hello",
-        type: "single_line_text_field",
-        createdAt: "2022-03-09T02:44:15Z",
-        updatedAt: "2022-03-09T02:44:50Z",
-        description: null,
-      },
-    },
-    {
-      node: {
-        namespace: "global",
-        id: "gid://shopify/Metafield/22326574776578",
-        key: "countdown_timer",
-        value: "2022-08-25T17:00:00.000Z",
-        type: "single_line_text_field",
-        createdAt: "2022-03-09T03:40:28Z",
-        updatedAt: "2022-03-09T07:50:36Z",
-        description: null,
-      },
-    },
-  ].map(({ node: { namespace, key, type, value } }) => [
-    namespace,
-    key,
-    type,
-    value,
-  ]);
+  const rows =
+    result?.data?.shop?.metafields?.edges.map(
+      ({ node: { namespace, key, type, value } }) => [
+        namespace,
+        key,
+        type,
+        value,
+      ]
+    ) || [];
   return (
     <>
       {contextualSaveBarMarkup}
 
-      <Page key={refreshKey} title="Shop">
+      <Page key={refreshKey} title="Shop metafields">
         <Card sectioned>
           <DataTable
             columnContentTypes={["text", "text", "text", "text"]}

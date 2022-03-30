@@ -45,9 +45,10 @@ const countdownMutation = gql`
   }
 `;
 function CustomDatePicker({ onChange, defaultValue }) {
-  const [selectedDates, setSelectedDates] = useState(() =>
+  const defaultDateRef = useRef(
     defaultValue ? new Date(defaultValue) : new Date()
   );
+  const [selectedDates, setSelectedDates] = useState(defaultDateRef.current);
   const [{ month, year }, setDate] = useState({
     month: selectedDates.getMonth(),
     year: selectedDates.getFullYear(),
@@ -57,8 +58,12 @@ function CustomDatePicker({ onChange, defaultValue }) {
     setDate({ month, year });
   }, []);
   useEffect(() => {
-    if (defaultValue !== selectedDates) onChange(selectedDates);
-  }, [defaultValue, onChange, selectedDates]);
+    if (defaultDateRef.current !== selectedDates) {
+      console.log({ defaultValue: defaultDateRef.current, selectedDates });
+      defaultDateRef.current = selectedDates;
+      onChange(selectedDates);
+    }
+  }, [onChange, selectedDates]);
   return (
     <DatePicker
       month={month}
@@ -69,7 +74,7 @@ function CustomDatePicker({ onChange, defaultValue }) {
     />
   );
 }
-export default function General({ skipToContentTarget }) {
+export default function CountDown({ skipToContentTarget }) {
   const defaultState = useRef({
     countdownFieldValue: null,
   });
@@ -133,7 +138,7 @@ export default function General({ skipToContentTarget }) {
     <>
       {contextualSaveBarMarkup}
 
-      <Page key={refreshKey} title="General">
+      <Page key={refreshKey} title="CountDown">
         <Layout>
           {skipToContentTarget}
           <Layout.AnnotatedSection

@@ -44,9 +44,8 @@ function AppLayout({ children }) {
           onSelect={(index) => {
             routers.push("/" + tabs[index].id);
           }}
-        >
-          {children}
-        </Tabs>
+        ></Tabs>
+        {children}
       </Frame>
     </>
   );

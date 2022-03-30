@@ -1,12 +1,13 @@
-import ApolloClient from "apollo-boost";
-import { ApolloProvider } from "react-apollo";
-import App from "next/app";
-import { AppProvider } from "@shopify/polaris";
 import { Provider, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticatedFetch } from "@shopify/app-bridge-utils";
 import { Redirect } from "@shopify/app-bridge/actions";
+import { AppProvider } from "@shopify/polaris";
 import "@shopify/polaris/dist/styles.css";
 import translations from "@shopify/polaris/locales/en.json";
+import ApolloClient from "apollo-boost";
+import App from "next/app";
+import { ApolloProvider } from "react-apollo";
+import RootTabsLayout from "../components/RootTabsLayout";
 
 function userLoggedInFetch(app) {
   const fetchFunction = authenticatedFetch(app);
@@ -41,10 +42,12 @@ function MyProvider(props) {
   });
 
   const Component = props.Component;
-
+  const { Layout = RootTabsLayout } = Component;
   return (
     <ApolloProvider client={client}>
-      <Component {...props} />
+      <Layout>
+        <Component {...props} />
+      </Layout>
     </ApolloProvider>
   );
 }
@@ -53,6 +56,7 @@ class MyApp extends App {
   render() {
     const theme = {};
     const { Component, pageProps, host } = this.props;
+
     return (
       <AppProvider theme={theme} i18n={translations}>
         <Provider
