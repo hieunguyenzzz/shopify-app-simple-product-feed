@@ -1,11 +1,11 @@
+import { ResourcePicker } from "@shopify/app-bridge-react";
 import React from "react";
-import General from "../components/General";
 import RootLayout from "../components/RootLayout";
 
 function Index() {
   return (
     <RootLayout>
-      <General />
+      <ResourcePicker resourceType="Product" open allowMultiple={false} />
     </RootLayout>
   );
 }

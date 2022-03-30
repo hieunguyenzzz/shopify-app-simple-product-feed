@@ -1,11 +1,11 @@
 import React from "react";
-import General from "../components/General";
 import RootLayout from "../components/RootLayout";
+import Shop from "../components/Shop";
 
 function Index() {
   return (
     <RootLayout>
-      <General />
+      <Shop />
     </RootLayout>
   );
 }
