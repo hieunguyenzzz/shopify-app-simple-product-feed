@@ -21,3 +21,5 @@ config/tunnel.pid
 .next/
 
 .history/
+
+.eslintrc.json
