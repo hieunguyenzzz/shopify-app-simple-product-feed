@@ -1,11 +1,11 @@
 import "@babel/polyfill";
-import dotenv from "dotenv";
-import "isomorphic-fetch";
 import createShopifyAuth, { verifyRequest } from "@shopify/koa-shopify-auth";
 import Shopify, { ApiVersion } from "@shopify/shopify-api";
+import dotenv from "dotenv";
+import "isomorphic-fetch";
 import Koa from "koa";
-import next from "next";
 import Router from "koa-router";
+import next from "next";
 
 dotenv.config();
 const port = parseInt(process.env.PORT, 10) || 8081;
@@ -90,7 +90,9 @@ app.prepare().then(async () => {
       await Shopify.Utils.graphqlProxy(ctx.req, ctx.res);
     }
   );
-
+  router.get("(/api/*)", () => {
+    console.log("api");
+  });
   router.get("(/_next/static/.*)", handleRequest); // Static content is clear
   router.get("/_next/webpack-hmr", handleRequest); // Webpack content is clear
   router.get("(.*)", async (ctx) => {

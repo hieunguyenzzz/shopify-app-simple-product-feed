@@ -1,7 +1,8 @@
 import useSWR from "swr";
+import { KEYSTONE_API_URL } from "./const";
 
-export const fetcher = (query, variables) =>
-  fetch("/api/graphql", {
+export const fetcher = async (query, variables) =>
+  await fetch(KEYSTONE_API_URL, {
     method: "POST",
     headers: {
       "content-type": "application/json",
