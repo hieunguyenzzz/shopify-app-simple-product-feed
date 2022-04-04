@@ -29,10 +29,11 @@ const ProductFeeds = () => {
   });
 
   const { headings, columnContentTypes, rows } = useMemo(() => {
+    const headings = getColumnHeadings(data);
     return {
       columnContentTypes: getColumnContentTypes(data),
-      rows: getRows(data),
-      headings: getColumnHeadings(data),
+      rows: getRows(data, headings),
+      headings,
     };
   }, [data]);
   return (

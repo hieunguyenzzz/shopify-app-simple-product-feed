@@ -1,25 +1,22 @@
 import RowActionButtons from "./RowActionButtons";
 
 export function getColumnContentTypes(data) {
-  if (!data.length) return [];
-  return [
-    ...Object.keys(data[0]).map(function () {
-      return "text";
-    }),
-    "numeric",
-  ];
+  return ["text", "text", "text", "text", "text", "numeric"];
 }
 export function getColumnHeadings(data) {
-  return ["id", "title", "type", "metafield", "default", ""];
+  return ["id", "title", "type", "metafield", "default", "actions"];
 }
-export function getRows(data) {
-  const headings = getColumnHeadings(data);
+export function getRows(data, headings) {
   const result = data?.map(function (item) {
     return [
       ...headings.filter(Boolean).map((value, i) => {
+        if (value === "actions") {
+          return (
+            <RowActionButtons key="actions" value={item} headings={headings} />
+          );
+        }
         return item[value];
       }),
-      <RowActionButtons key="actions" value={item} headings={headings} />,
     ];
   });
   return result || [];
