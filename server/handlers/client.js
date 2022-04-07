@@ -1,15 +1,16 @@
-import ApolloClient from "apollo-boost";
+import ApolloClient from 'apollo-boost'
 
 export const createClient = (shop, accessToken) => {
+  console.log({ shop })
   return new ApolloClient({
-    uri: `https://${shop}/admin/api/2019-10/graphql.json`,
+    uri: `https://${shop}/admin/api/assdfas`,
     request: (operation) => {
       operation.setContext({
         headers: {
-          "X-Shopify-Access-Token": accessToken,
-          "User-Agent": `shopify-app-node ${process.env.npm_package_version} | Shopify App CLI`,
+          'X-Shopify-Access-Token': accessToken,
+          'User-Agent': `shopify-app-node ${process.env.npm_package_version} | Shopify App CLI`,
         },
-      });
+      })
     },
-  });
-};
+  })
+}

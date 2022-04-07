@@ -5,10 +5,11 @@ import SortableTree, {
   removeNodeAtPath,
 } from '@nosferatu500/react-sortable-tree'
 import '@nosferatu500/react-sortable-tree/style.css'
-import { Button, Card, Layout, Page, TextField } from '@shopify/polaris'
+import { Button, Card, Layout, Modal, Page, TextField } from '@shopify/polaris'
 import { gql } from 'apollo-boost'
+import { toXML } from 'jstoxml'
 import get from 'lodash.get'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useQuery } from 'react-apollo'
 import XmlCodemirror from './Codemirror'
 const styles = (
@@ -164,7 +165,140 @@ const productVariant = {
   },
 }
 const maxDepth = 5
+const recusiveMap = (productVariant, treeData, depth = 0) => {
+  if (depth > maxDepth) {
+    return
+  }
+  return treeData
+    .map((node) => {
+      const { key, value, type } = node
+      if (type === 'product-link') {
+        return {
+          [key]: `/products/${get(
+            productVariant,
+            'product.handle'
+          )}?variant=${get(productVariant, 'id').replace(
+            'gid://shopify/ProductVariant/',
+            ''
+          )}`,
+          children:
+            node.children &&
+            recusiveMap(productVariant, node.children, depth + 1),
+        }
+      }
+      if (type) {
+        return null
+      }
+      if (node.children) {
+        return {
+          [key]: value && value.length && get(productVariant, value),
+          children: recusiveMap(productVariant, node.children, depth + 1),
+        }
+      }
+      return {
+        [key]: value && value.length && get(productVariant, value),
+      }
+    })
+    .filter(Boolean)
+}
+function download(filename, text) {
+  var element = document.createElement('a')
+  element.setAttribute(
+    'href',
+    'data:text/plain;charset=utf-8,' + encodeURIComponent(text)
+  )
+  element.setAttribute('download', filename)
 
+  element.style.display = 'none'
+  document.body.appendChild(element)
+
+  element.click()
+
+  document.body.removeChild(element)
+}
+
+const ExportModal = ({ onClose, treeData }) => {
+  const [allProducts, setAllProducts] = useState([])
+  const [after, setAfter] = useState()
+  const result = useQuery(getproductVariantsQuery(after))
+  useEffect(() => {
+    const endCursor =
+      result.data?.productVariants?.edges?.length &&
+      result.data?.productVariants?.edges[
+        result.data?.productVariants?.edges.length - 1
+      ].cursor
+    if (endCursor) {
+      setAfter(endCursor)
+    }
+    if (result.data?.productVariants?.edges) {
+      setAllProducts((state) => [
+        ...state,
+        ...result.data?.productVariants?.edges.map(({ node }) => node),
+      ])
+    }
+  }, [result])
+  console.log({ after })
+  const feedXml = useMemo(() => {
+    return toXML(
+      {
+        _name: 'rss',
+        _attrs: {
+          version: '2.0',
+        },
+        _content: {
+          channel: [
+            {
+              title: 'Data feed Title',
+            },
+            {
+              description: 'Data feed description.',
+            },
+            {
+              link: 'https://www.designer-icons.com/',
+            },
+            {
+              lastBuildDate: () => new Date(),
+            },
+            {
+              pubDate: () => new Date(),
+            },
+            {
+              language: 'en',
+            },
+            ...allProducts.map((productVariant) => ({
+              item: recusiveMap(productVariant, treeData),
+            })),
+          ],
+        },
+      },
+      {
+        header: true,
+        indent: '  ',
+      }
+    )
+  }, [allProducts, treeData])
+  return (
+    <Modal open={true} onClose={onClose} title="Product feeds">
+      <Modal.Section>
+        <div style={{ height: 700, position: 'relative' }}>
+          <XmlCodemirror xml={feedXml} />
+        </div>
+      </Modal.Section>
+      <Modal.Section>
+        <div style={{ display: 'flex' }}>
+          <div style={{ flex: 1 }} />
+          <Button
+            primary
+            url={'data:text/plain;charset=utf-8,' + feedXml}
+            download="feed.xml"
+          >
+            Dowload
+          </Button>
+        </div>
+      </Modal.Section>
+    </Modal>
+  )
+}
 const XmlSchema = ({ onChange, ...props }) => {
   const [state, setState] = useState({
     searchString: '',
@@ -200,45 +334,7 @@ const XmlSchema = ({ onChange, ...props }) => {
 
   useEffect(
     function () {
-      const recusiveMap = (treeData, depth = 0) => {
-        if (depth > maxDepth) {
-          return
-        }
-        return treeData
-          .map((node) => {
-            const { key, value, type } = node
-            if (type === 'product-link') {
-              return {
-                [key]: `/products/${get(
-                  productVariant,
-                  'product.handle'
-                )}?variant=${get(productVariant, 'id').replace(
-                  'gid://shopify/ProductVariant/',
-                  ''
-                )}`,
-                children:
-                  node.children && recusiveMap(node.children, depth + 1),
-              }
-            }
-            if (type) {
-              return null
-            }
-            if (node.children) {
-              return {
-                [key]: value && value.length && get(productVariant, value),
-                children: recusiveMap(node.children, depth + 1),
-              }
-            }
-            return {
-              [key]: value && value.length && get(productVariant, value),
-            }
-          })
-          .filter(Boolean)
-      }
-      onChange &&
-        onChange({
-          item: recusiveMap(treeData),
-        })
+      onChange(treeData)
     },
     [onChange, treeData]
   )
@@ -279,7 +375,7 @@ const XmlSchema = ({ onChange, ...props }) => {
             generateNodeProps={(rowinfo) => {
               const key = rowinfo.node?.key || null
               const value = rowinfo.node?.value || null
-              const editable = rowinfo.node?.editable
+              const editable = true || rowinfo.node?.editable
               const path = rowinfo.path
               if (rowinfo?.node?.type === 'add') {
                 return {
@@ -445,15 +541,10 @@ const XmlSchema = ({ onChange, ...props }) => {
     </>
   )
 }
-export default function Product() {
-  const [after, setAfter] = useState()
-  const [state, setState] = useState({})
-  const result = useQuery(
-    after
-      ? gql`
+const getproductVariantsQuery = (after) => {
+  return gql`
   {
-    productVariants(first: 20 after: "${after}") {
-      
+    productVariants(first: 20 ${after ? 'after:' + '"' + after + '"' : ''}) {
       edges {
         cursor
         node {
@@ -464,6 +555,7 @@ export default function Product() {
           product {
             handle
             title
+            productType
           }
           selectedOptions {
             name
@@ -485,46 +577,33 @@ export default function Product() {
     }
   }
 `
-      : gql`
-          {
-            productVariants(first: 20) {
-              edges {
-                cursor
-                node {
-                  id
-                  title
-                  price
+}
+export default function Product() {
+  const [allProducts, setAllProducts] = useState([])
+  const [modal, setModal] = useState()
+  const [state, setState] = useState([
+    { key: 'g:id', value: 'id' },
+    { key: 'title', value: 'title' },
+    { key: 'link', value: 'link', type: 'product-link' },
+    { key: 'g:price', value: 'price' },
+    { key: 'description' },
+    { key: 'g:product_type' },
+    { key: 'g:image_link' },
+    {
+      key: 'g:shipping',
+      children: [{ key: 'g:country' }, { key: 'g:price' }],
+    },
+    { key: 'g:country' },
+    { key: 'g:price' },
+    { key: 'g:condition' },
+    { key: 'g:availability' },
+    { key: 'g:status' },
+    { key: 'g:shipping_weight' },
+    { key: 'g:google_product_category' },
+    { key: 'g:fb_product_category' },
+    { key: 'new node', type: 'add' },
+  ])
 
-                  product {
-                    handle
-                    title
-                  }
-                  selectedOptions {
-                    name
-                    value
-                  }
-                  metafields(first: 20) {
-                    edges {
-                      node {
-                        id
-                        namespace
-                        key
-                        value
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        `
-  )
-  useEffect(() => {
-    console.log({ result })
-    if (result.data?.productVariants?.pageInfo?.endCursor) {
-      setAfter(result.data?.productVariants.pageInfo.endCursor)
-    }
-  }, [result])
   return (
     <Page fullWidth>
       {styles}
@@ -537,43 +616,62 @@ export default function Product() {
           </Card>
         </Layout.Section>
         <Layout.Section oneThird>
-          <Card>
+          <Card
+            title="Preview"
+            actions={[
+              {
+                content: 'Export Feed Xml',
+                onAction: () =>
+                  setModal(
+                    <ExportModal
+                      treeData={state}
+                      onClose={() => setModal(null)}
+                    />
+                  ),
+              },
+            ]}
+          >
             <Card.Section>
-              <XmlCodemirror
-                data={{
-                  _name: 'rss',
-                  _attrs: {
-                    version: '2.0',
-                  },
-                  _content: {
-                    channel: [
-                      {
-                        title: 'Data feed Title',
-                      },
-                      {
-                        description: 'Data feed description.',
-                      },
-                      {
-                        link: 'https://www.designer-icons.com/',
-                      },
-                      {
-                        lastBuildDate: () => new Date(),
-                      },
-                      {
-                        pubDate: () => new Date(),
-                      },
-                      {
-                        language: 'en',
-                      },
-                      state,
-                    ],
-                  },
-                }}
-              />
+              <div style={{ height: 700, position: 'relative' }}>
+                <XmlCodemirror
+                  data={{
+                    _name: 'rss',
+                    _attrs: {
+                      version: '2.0',
+                    },
+                    _content: {
+                      channel: [
+                        {
+                          title: 'Data feed Title',
+                        },
+                        {
+                          description: 'Data feed description.',
+                        },
+                        {
+                          link: 'https://www.designer-icons.com/',
+                        },
+                        {
+                          lastBuildDate: () => new Date(),
+                        },
+                        {
+                          pubDate: () => new Date(),
+                        },
+                        {
+                          language: 'en',
+                        },
+                        {
+                          item: recusiveMap(productVariant, state),
+                        },
+                      ],
+                    },
+                  }}
+                />
+              </div>
             </Card.Section>
           </Card>
         </Layout.Section>
       </Layout>
+      {modal}
     </Page>
   )
 }
