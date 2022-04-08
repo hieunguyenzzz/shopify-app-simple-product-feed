@@ -1,13 +1,11 @@
 import '@babel/polyfill'
 import createShopifyAuth, { verifyRequest } from '@shopify/koa-shopify-auth'
 import Shopify, { ApiVersion } from '@shopify/shopify-api'
-import dotenv from 'dotenv'
+import parse from 'co-body'
 import 'isomorphic-fetch'
 import Koa from 'koa'
 import Router from 'koa-router'
 import next from 'next'
-
-dotenv.config()
 const port = parseInt(process.env.PORT, 10) || 8081
 const dev = process.env.NODE_ENV !== 'production'
 const app = next({
@@ -90,14 +88,48 @@ app.prepare().then(async () => {
       await Shopify.Utils.graphqlProxy(ctx.req, ctx.res)
     }
   )
-  router.get('(/api/*)', () => {
-    console.log('api')
-  })
+  router.all(
+    '/api',
+    verifyRequest({ returnHeader: true }),
+    async (ctx, next) => {
+      // Load the current session to get the `accessToken`.
+      var body = await parse.json(ctx.req)
+      console.log({ body })
+      const { path, query, data, method = 'GET' } = body
+      const session = await Shopify.Utils.loadCurrentSession(ctx.req, ctx.res)
+      const client = new Shopify.Clients.Rest(session.shop, session.accessToken)
+      let result
+      switch (method) {
+        case 'POST':
+          result = await client.post({
+            path,
+            type: 'application/json',
+            data,
+          })
+
+          break
+        case 'PUT':
+          result = await client.put({
+            path,
+            type: 'application/json',
+            data,
+          })
+
+          break
+        default:
+          result = await client.get({
+            path,
+          })
+          break
+      }
+      ctx.res.statusCode = 200
+      ctx.res.end(JSON.stringify(result.body))
+    }
+  )
   router.get('(/_next/static/.*)', handleRequest) // Static content is clear
   router.get('/_next/webpack-hmr', handleRequest) // Webpack content is clear
   router.get('(.*)', async (ctx) => {
     const shop = ctx.query.shop
-
     // This shop hasn't been seen yet, go through OAuth to create a session
     if (ACTIVE_SHOPIFY_SHOPS[shop] === undefined) {
       ctx.redirect(`/auth?shop=${shop}`)

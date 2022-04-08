@@ -3,7 +3,7 @@ import ApolloClient from 'apollo-boost'
 export const createClient = (shop, accessToken) => {
   console.log({ shop })
   return new ApolloClient({
-    uri: `https://${shop}/admin/api/assdfas`,
+    uri: `https://${shop}/admin/api/2022-04/graphql.json`,
     request: (operation) => {
       operation.setContext({
         headers: {

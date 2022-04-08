@@ -5,13 +5,22 @@ import SortableTree, {
   removeNodeAtPath,
 } from '@nosferatu500/react-sortable-tree'
 import '@nosferatu500/react-sortable-tree/style.css'
-import { Button, Card, Layout, Modal, Page, TextField } from '@shopify/polaris'
+import {
+  Button,
+  Card,
+  Layout,
+  Modal,
+  Page,
+  SkeletonBodyText,
+  TextField,
+} from '@shopify/polaris'
 import { gql } from 'apollo-boost'
 import { toXML } from 'jstoxml'
 import get from 'lodash.get'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useQuery } from 'react-apollo'
 import XmlCodemirror from './Codemirror'
+import { useApp } from './RootContext'
 const styles = (
   <style
     dangerouslySetInnerHTML={{
@@ -237,7 +246,6 @@ const ExportModal = ({ onClose, treeData }) => {
       ])
     }
   }, [result])
-  console.log({ after })
   const feedXml = useMemo(() => {
     return toXML(
       {
@@ -289,12 +297,104 @@ const ExportModal = ({ onClose, treeData }) => {
           <div style={{ flex: 1 }} />
           <Button
             primary
+            loading={result.loading}
             url={'data:text/plain;charset=utf-8,' + feedXml}
             download="feed.xml"
           >
-            Dowload
+            Download
           </Button>
         </div>
+      </Modal.Section>
+    </Modal>
+  )
+}
+const GenerateXmlModal = ({ onClose, treeData }) => {
+  const [allProducts, setAllProducts] = useState([])
+  const [loadAll, setLoadAll] = useState()
+  const [after, setAfter] = useState()
+  const result = useQuery(getproductVariantsQuery(after))
+  useEffect(() => {
+    const endCursor =
+      result.data?.productVariants?.edges?.length &&
+      result.data?.productVariants?.edges[
+        result.data?.productVariants?.edges.length - 1
+      ].cursor
+    if (endCursor) {
+      setAfter(endCursor)
+    } else {
+      setLoadAll(true)
+    }
+    if (result.data?.productVariants?.edges) {
+      setAllProducts((state) => [
+        ...state,
+        ...result.data?.productVariants?.edges.map(({ node }) => node),
+      ])
+    }
+  }, [result])
+  console.log({ after })
+  const feedXml = useMemo(() => {
+    return toXML(
+      {
+        _name: 'rss',
+        _attrs: {
+          version: '2.0',
+        },
+        _content: {
+          channel: [
+            {
+              title: 'Data feed Title',
+            },
+            {
+              description: 'Data feed description.',
+            },
+            {
+              link: 'https://www.designer-icons.com/',
+            },
+            {
+              lastBuildDate: () => new Date(),
+            },
+            {
+              pubDate: () => new Date(),
+            },
+            {
+              language: 'en',
+            },
+            ...allProducts.map((productVariant) => ({
+              item: recusiveMap(productVariant, treeData),
+            })),
+          ],
+        },
+      },
+      {
+        header: true,
+        indent: '  ',
+      }
+    )
+  }, [allProducts, treeData])
+  const app = useApp()
+  const createAsset = app.apis.createAsset
+  const [asset, setAsset] = useState()
+  useEffect(() => {
+    if (loadAll) {
+      createAsset(app.theme.id, 'feed.xml', feedXml)
+        .then((res) => res.json())
+        .then(({ asset }) => {
+          setAsset(asset)
+        })
+    }
+  }, [app.theme.id, createAsset, feedXml, loadAll])
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      secondaryActions={[{ content: 'Cancel', onAction: onClose }]}
+      title="Feed Url"
+    >
+      <Modal.Section>
+        {!asset && <SkeletonBodyText />}
+        {asset?.public_url && (
+          <TextField name="public_url" value={asset?.public_url} />
+        )}
       </Modal.Section>
     </Modal>
   )
@@ -619,6 +719,16 @@ export default function Product() {
           <Card
             title="Preview"
             actions={[
+              {
+                content: 'Generate Feed Xml',
+                onAction: () =>
+                  setModal(
+                    <GenerateXmlModal
+                      treeData={state}
+                      onClose={() => setModal(null)}
+                    />
+                  ),
+              },
               {
                 content: 'Export Feed Xml',
                 onAction: () =>

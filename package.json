@@ -36,6 +36,7 @@
     "@shopify/polaris": "^6.2.0",
     "@shopify/polaris-icons": "^4.18.2",
     "apollo-boost": "^0.4.9",
+    "co-body": "^6.1.0",
     "codemirror": "^5.65.2",
     "cross-env": "^7.0.3",
     "dotenv": "^8.2.0",
